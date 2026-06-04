@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💕 Babi's Blox Fruit Gacha</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;600;700;900&display=swap');
+
+  :root {
+    --gold: #FFD700;
+    --green: #00FF88;
+    --dark: #0a0a14;
+    --panel: #12121e;
+    --border: #2a2a40;
+    --pink: #ff69b4;
+    --red: #e63946;
+    --purple: #9b59b6;
+    --cyan: #00cfff;
+    --common-color: #aaaaaa;
+    --rare-color: #3498db;
+    --legendary-color: #f39c12;
+    --mythic-color: #9b59b6;
+    --secret-color: #ff1493;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--dark);
+    font-family: 'Nunito', sans-serif;
+    color: white;
+    min-height: 100vh;
+    overflow-x: hidden;
+    cursor: default;
+  }
+
+  /* ========== BACKGROUND ========== */
+  .bg {
+    position: fixed; inset: 0; z-index: 0;
+    background: radial-gradient(ellipse at 20% 80%, #0d1f1a 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, #1a0d2e 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, #0a1020 0%, #050508 100%);
+  }
+  .bg::after {
+    content: '';
+    position: absolute; inset: 0;
+    background-image: radial-gradient(circle, rgba(0,255,136,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* ========== SCREENS ========== */
+  .screen { position: relative; z-index: 1; display: none; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+  /* ========== HUD ========== */
+  #hud {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 20px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+    pointer-events: none;
+  }
+  #hud.visible { pointer-events: all; }
+  .kiss-counter {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(0,0,0,0.6); border: 2px solid var(--pink);
+    border-radius: 30px; padding: 6px 16px;
+    font-family: 'Bangers', cursive; font-size: 1.4rem; color: var(--pink);
+    text-shadow: 0 0 10px var(--pink);
+  }
+  .shop-btn-hud {
+    background: linear-gradient(135deg, #FFD700, #ff8c00);
+    border: none; border-radius: 12px; padding: 8px 16px;
+    font-family: 'Bangers', cursive; font-size: 1.1rem; color: #000;
+    cursor: pointer; pointer-events: all;
+    box-shadow: 0 0 15px rgba(255,215,0,0.5);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .shop-btn-hud:hover { transform: scale(1.05); box-shadow: 0 0 25px rgba(255,215,0,0.8); }
+
+  /* ========== WORLD SCREEN ========== */
+  #world-screen {
+    background: linear-gradient(180deg, #87ceeb 0%, #b8e0ff 40%, #7ec8a0 60%, #5a9e70 100%);
+    position: relative;
+  }
+  #world-screen .ground {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 35%;
+    background: linear-gradient(180deg, #5a9e70, #3d7a52);
+    border-top: 3px solid #7ec8a0;
+  }
+  .npc-area {
+    position: relative; display: flex; flex-direction: column; align-items: center; gap: 20px;
+    margin-bottom: 80px;
+  }
+  .npc-sprite {
+    width: 90px; height: 90px; cursor: pointer;
+    filter: drop-shadow(0 0 20px var(--green));
+    transition: transform 0.3s, filter 0.3s;
+    animation: float 3s ease-in-out infinite;
+    image-rendering: pixelated;
+  }
+  .npc-sprite:hover {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 30px var(--green));
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  .npc-ring {
+    width: 100px; height: 20px;
+    background: radial-gradient(ellipse, rgba(0,255,136,0.6) 0%, transparent 70%);
+    margin-top: -10px;
+    animation: pulse-ring 2s ease-in-out infinite;
+  }
+  @keyframes pulse-ring {
+    0%, 100% { opacity: 1; transform: scaleX(1); }
+    50% { opacity: 0.5; transform: scaleX(0.8); }
+  }
+  .npc-label {
+    font-family: 'Bangers', cursive; font-size: 1.1rem;
+    color: var(--green); text-shadow: 0 0 10px var(--green);
+    background: rgba(0,0,0,0.5); border-radius: 20px; padding: 3px 12px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .shop-icon { font-size: 1.2rem; color: var(--gold); }
+
+  /* ========== DIALOGUE BOX ========== */
+  .dialogue-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .dialogue-box {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 3px solid var(--green);
+    border-radius: 20px;
+    padding: 24px 28px;
+    max-width: 460px; width: 90%;
+    box-shadow: 0 0 40px rgba(0,255,136,0.3), inset 0 0 30px rgba(0,0,0,0.5);
+    position: relative;
+  }
+  .dialogue-npc-header {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 16px;
+  }
+  .dialogue-npc-avatar {
+    width: 60px; height: 60px; border-radius: 50%;
+    border: 3px solid var(--green);
+    object-fit: cover;
+    box-shadow: 0 0 15px rgba(0,255,136,0.5);
+  }
+  .dialogue-npc-name {
+    font-family: 'Bangers', cursive; font-size: 1.5rem;
+    color: var(--green); text-shadow: 0 0 10px var(--green);
+  }
+  .dialogue-text {
+    font-size: 1rem; line-height: 1.6; color: #e0e0e0;
+    margin-bottom: 20px; min-height: 60px;
+  }
+  .dialogue-text .highlight { color: var(--gold); font-weight: 700; }
+  .dialogue-text .kiss-text { color: var(--pink); font-weight: 700; }
+  .dialogue-buttons {
+    display: flex; gap: 10px; justify-content: flex-end;
+  }
+  .btn-alright {
+    background: linear-gradient(135deg, var(--green), #00aa55);
+    border: none; border-radius: 10px; padding: 10px 22px;
+    font-family: 'Bangers', cursive; font-size: 1.1rem; color: #000;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(0,255,136,0.4);
+  }
+  .btn-alright:hover { transform: scale(1.05); box-shadow: 0 4px 25px rgba(0,255,136,0.6); }
+  .btn-nevermind {
+    background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 10px; padding: 10px 22px;
+    font-family: 'Bangers', cursive; font-size: 1.1rem; color: #aaa;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-nevermind:hover { background: rgba(255,255,255,0.15); color: white; }
+
+  /* ========== GACHA SCREEN ========== */
+  #gacha-screen {
+    padding: 20px;
+    padding-top: 80px;
+  }
+  .gacha-title {
+    font-family: 'Bangers', cursive; font-size: 2.8rem;
+    text-align: center; margin-bottom: 4px;
+    background: linear-gradient(135deg, var(--cyan), var(--gold));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    text-shadow: none; letter-spacing: 2px;
+  }
+  .gacha-subtitle { text-align: center; color: #888; font-size: 0.85rem; margin-bottom: 24px; }
+
+  /* Fruit scroll strip */
+  .fruit-showcase {
+    width: 100%; max-width: 760px;
+    background: rgba(0,0,0,0.6); border: 2px solid var(--border);
+    border-radius: 16px; overflow: hidden;
+    margin-bottom: 20px; position: relative;
+  }
+  .fruit-showcase::before, .fruit-showcase::after {
+    content: ''; position: absolute; top: 0; bottom: 0; width: 80px; z-index: 10;
+    pointer-events: none;
+  }
+  .fruit-showcase::before { left: 0; background: linear-gradient(90deg, #0a0a14, transparent); }
+  .fruit-showcase::after { right: 0; background: linear-gradient(-90deg, #0a0a14, transparent); }
+
+  /* Center indicator */
+  .center-marker {
+    position: absolute; top: 0; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 4px; background: var(--gold); z-index: 11;
+    box-shadow: 0 0 20px var(--gold);
+  }
+  .center-marker::before, .center-marker::after {
+    content: '▼'; position: absolute; left: 50%; transform: translateX(-50%);
+    color: var(--gold); font-size: 1rem;
+  }
+  .center-marker::before { top: -16px; }
+  .center-marker::after { bottom: -16px; content: '▲'; }
+
+  .fruit-strip {
+    display: flex; align-items: center; gap: 0;
+    padding: 16px 0;
+    transition: transform 0.05s linear;
+    will-change: transform;
+  }
+  .fruit-card {
+    min-width: 120px; width: 120px; height: 160px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; padding: 10px; border-radius: 12px;
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 2px solid var(--border);
+    margin: 0 4px; flex-shrink: 0;
+    position: relative; overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .fruit-card.selected {
+    border-color: var(--gold);
+    box-shadow: 0 0 20px rgba(255,215,0,0.5);
+  }
+  .fruit-card-img {
+    width: 70px; height: 70px; object-fit: contain;
+    filter: drop-shadow(0 0 8px rgba(255,255,255,0.3));
+  }
+  .fruit-card-name {
+    font-family: 'Bangers', cursive; font-size: 1rem;
+    color: white; text-align: center;
+  }
+  .fruit-card-rarity {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    padding: 2px 10px; border-radius: 20px;
+  }
+  .rarity-common { background: rgba(170,170,170,0.2); color: var(--common-color); border: 1px solid var(--common-color); }
+  .rarity-rare { background: rgba(52,152,219,0.2); color: var(--rare-color); border: 1px solid var(--rare-color); }
+  .rarity-legendary { background: rgba(243,156,18,0.2); color: var(--legendary-color); border: 1px solid var(--legendary-color); }
+  .rarity-mythic { background: rgba(155,89,182,0.2); color: var(--mythic-color); border: 1px solid var(--mythic-color); }
+  .rarity-secret { background: rgba(255,20,147,0.2); color: var(--secret-color); border: 1px solid var(--secret-color); }
+
+  /* Gacha buttons */
+  .gacha-actions { display: flex; gap: 14px; margin-bottom: 16px; align-items: center; }
+  .btn-roll {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    border: none; border-radius: 14px; padding: 14px 36px;
+    font-family: 'Bangers', cursive; font-size: 1.5rem; color: white;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 6px 20px rgba(238,90,36,0.5);
+    position: relative; overflow: hidden;
+  }
+  .btn-roll::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+  }
+  .btn-roll:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(238,90,36,0.7); }
+  .btn-roll:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .cost-tag {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,105,180,0.15); border: 1px solid var(--pink);
+    border-radius: 20px; padding: 6px 14px;
+    font-size: 0.9rem; color: var(--pink);
+  }
+
+  /* Result display */
+  .result-box {
+    text-align: center; padding: 16px; border-radius: 14px;
+    background: rgba(0,0,0,0.4); border: 2px solid var(--border);
+    min-width: 300px; max-width: 420px;
+    transition: all 0.5s; min-height: 80px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .result-fruit-name {
+    font-family: 'Bangers', cursive; font-size: 1.6rem;
+    margin-bottom: 4px;
+  }
+  .result-msg { font-size: 0.9rem; color: #ccc; font-style: italic; }
+  .result-secret-msg { color: var(--secret-color); font-size: 1.1rem; font-weight: 700; animation: flicker 0.5s infinite; }
+  @keyframes flicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+  /* Luck boost indicator */
+  .luck-active {
+    text-align: center; padding: 8px 20px;
+    background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,140,0,0.15));
+    border: 2px solid var(--gold); border-radius: 30px;
+    font-family: 'Bangers', cursive; font-size: 1rem; color: var(--gold);
+    animation: goldPulse 2s ease-in-out infinite; display: none;
+  }
+  .luck-active.show { display: block; }
+  @keyframes goldPulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(255,215,0,0.3); }
+    50% { box-shadow: 0 0 25px rgba(255,215,0,0.7); }
+  }
+
+  /* ========== SHOP OVERLAY ========== */
+  .shop-overlay {
+    position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,0,0,0.8); backdrop-filter: blur(6px);
+    display: none; align-items: center; justify-content: center;
+    animation: fadeIn 0.3s ease;
+  }
+  .shop-overlay.open { display: flex; }
+  .shop-box {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 3px solid var(--gold);
+    border-radius: 20px; padding: 28px;
+    max-width: 380px; width: 90%;
+    box-shadow: 0 0 50px rgba(255,215,0,0.3);
+    text-align: center;
+  }
+  .shop-title { font-family: 'Bangers', cursive; font-size: 2rem; color: var(--gold); margin-bottom: 6px; }
+  .shop-desc { color: #aaa; font-size: 0.9rem; margin-bottom: 20px; }
+  .shop-item {
+    background: rgba(255,215,0,0.1); border: 2px solid var(--gold);
+    border-radius: 14px; padding: 16px; margin-bottom: 14px;
+  }
+  .shop-item-name { font-family: 'Bangers', cursive; font-size: 1.4rem; color: var(--gold); margin-bottom: 4px; }
+  .shop-item-desc { font-size: 0.85rem; color: #ccc; margin-bottom: 12px; }
+  .shop-item-price { color: var(--pink); font-weight: 700; font-size: 1rem; margin-bottom: 12px; }
+  .btn-buy {
+    background: linear-gradient(135deg, var(--gold), #ff8c00);
+    border: none; border-radius: 10px; padding: 10px 24px;
+    font-family: 'Bangers', cursive; font-size: 1.1rem; color: #000;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-buy:hover { transform: scale(1.05); }
+  .btn-buy:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .btn-close-shop {
+    background: none; border: 2px solid #555; border-radius: 10px;
+    padding: 8px 20px; color: #888; font-family: 'Bangers', cursive; font-size: 1.1rem;
+    cursor: pointer; margin-top: 6px; width: 100%;
+    transition: all 0.2s;
+  }
+  .btn-close-shop:hover { border-color: #aaa; color: #ccc; }
+
+  /* ========== SECRET REVEAL SCREEN ========== */
+  #secret-screen {
+    background: radial-gradient(ellipse at center, #1a0010 0%, #05000a 100%);
+    text-align: center; padding: 30px;
+  }
+  .secret-heart-bg {
+    position: fixed; inset: 0; z-index: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 40vw; opacity: 0.04;
+    animation: heartbeat 2s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes heartbeat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+  .secret-content { position: relative; z-index: 1; max-width: 500px; }
+  .secret-label {
+    font-family: 'Bangers', cursive; font-size: 1rem; letter-spacing: 6px;
+    color: var(--secret-color); text-shadow: 0 0 20px var(--secret-color);
+    margin-bottom: 16px; animation: fadeInUp 1s ease both;
+  }
+  .secret-img-wrapper {
+    width: 220px; height: 220px; margin: 0 auto 20px;
+    border-radius: 50%; overflow: hidden;
+    border: 5px solid var(--secret-color);
+    box-shadow: 0 0 60px var(--secret-color), 0 0 100px rgba(255,20,147,0.3);
+    animation: fadeInUp 1s ease 0.3s both, secretGlow 3s ease-in-out infinite 1.5s;
+  }
+  @keyframes secretGlow {
+    0%, 100% { box-shadow: 0 0 60px var(--secret-color), 0 0 100px rgba(255,20,147,0.3); }
+    50% { box-shadow: 0 0 80px var(--secret-color), 0 0 150px rgba(255,20,147,0.5); }
+  }
+  .secret-img { width: 100%; height: 100%; object-fit: cover; }
+  .secret-title {
+    font-family: 'Bangers', cursive; font-size: 2.2rem; color: var(--secret-color);
+    text-shadow: 0 0 30px var(--secret-color); margin-bottom: 10px;
+    animation: fadeInUp 1s ease 0.5s both;
+  }
+
+  /* ========== FINAL MESSAGE SCREEN ========== */
+  #final-screen {
+    background: radial-gradient(ellipse at center, #0a0020 0%, #030008 100%);
+    text-align: center; padding: 30px;
+  }
+  .final-content { position: relative; z-index: 1; max-width: 480px; }
+  .final-stats {
+    background: rgba(255,105,180,0.1); border: 2px solid var(--pink);
+    border-radius: 20px; padding: 28px; margin-bottom: 24px;
+    animation: fadeInUp 1s ease both;
+  }
+  .final-spent {
+    font-family: 'Bangers', cursive; font-size: 2.8rem; color: var(--pink);
+    text-shadow: 0 0 20px var(--pink); margin-bottom: 8px;
+    animation: countUp 2s ease both;
+  }
+  .final-equiv { font-size: 1rem; color: #ccc; line-height: 1.8; margin-bottom: 16px; }
+  .final-equiv span { color: var(--gold); font-weight: 700; }
+  .final-locked {
+    font-family: 'Bangers', cursive; font-size: 2rem; color: white;
+    line-height: 1.4; animation: fadeInUp 1s ease 1s both;
+  }
+  .final-locked .heart { color: var(--pink); animation: heartbeat 1s infinite; display: inline-block; }
+  .final-stars {
+    font-size: 2rem; margin-top: 16px;
+    animation: fadeInUp 1s ease 1.5s both;
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes countUp { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+
+  /* Particle canvas */
+  #particle-canvas {
+    position: fixed; inset: 0; pointer-events: none; z-index: 50;
+  }
+
+  /* Scroll roll animation */
+  @keyframes rollBounce {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="particle-canvas"></canvas>
+
+<!-- HUD -->
+<div id="hud" style="display:none;">
+  <div class="kiss-counter">💋 <span id="kiss-display">0</span> kisses</div>
+  <button class="shop-btn-hud" onclick="openShop()">🛒 Shop</button>
+</div>
+
+<!-- WORLD SCREEN -->
+<div id="world-screen" class="screen active">
+  <div class="ground"></div>
+  <div class="npc-area">
+    <div class="npc-label"><span class="shop-icon">$</span> SHOP</div>
+    <img src="ZIOLES/zioles.webp" class="npc-sprite" id="zioles-npc" alt="Zioles" onclick="startDialogue()" 
+         onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 90 90%22><rect width=%2290%22 height=%2290%22 rx=%2245%22 fill=%22%2300FF88%22/><text x=%2245%22 y=%2260%22 text-anchor=%22middle%22 font-size=%2240%22>🧚</text></svg>'">
+    <div class="npc-ring"></div>
+    <div style="font-family:'Bangers',cursive; font-size:1.3rem; color:var(--green); text-shadow:0 0 10px var(--green);">ZIOLES</div>
+  </div>
+</div>
+
+<!-- GACHA SCREEN -->
+<div id="gacha-screen" class="screen">
+  <div class="gacha-title">BABI FRUIT GACHA</div>
+  <div class="gacha-subtitle"></div>
+
+  <div class="fruit-showcase">
+    <div class="center-marker"></div>
+    <div class="fruit-strip" id="fruit-strip"></div>
+  </div>
+
+  <div class="luck-active" id="luck-indicator">⭐ LUCK BOOST ACTIVE — SECRET +23%! ⭐</div>
+
+  <div class="gacha-actions">
+    <button class="btn-roll" id="roll-btn" onclick="doRoll()">ROLL!</button>
+    <div class="cost-tag">💋 <span id="roll-cost">1</span> kiss/roll</div>
+  </div>
+
+  <div class="result-box" id="result-box">
+    <div style="color:#555; font-style:italic;">Tap ROLL to spin the gacha!</div>
+  </div>
+
+  <button onclick="backToWorld()" style="margin-top:16px; background:none; border:2px solid #333; color:#666; border-radius:10px; padding:8px 20px; font-family:'Nunito',sans-serif; cursor:pointer; font-size:0.9rem;">← Back</button>
+</div>
+
+<!-- SECRET REVEAL -->
+<div id="secret-screen" class="screen">
+  <div class="secret-heart-bg">💗</div>
+  <div class="secret-content">
+    <div class="secret-label">✦ SECRET FRUIT CALLED BABI ✦</div>
+    <div class="secret-img-wrapper">
+      <img src="FRUITS/SECRET/me.jpg" class="secret-img" alt="Secret" 
+           onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 220 220%22><rect width=%22220%22 height=%22220%22 fill=%22%23ff1493%22/><text x=%22110%22 y=%22130%22 text-anchor=%22middle%22 font-size=%2280%22>💕</text></svg>'">
+    </div>
+    <div class="secret-title">YAYYY FINALLYY <br>YOU GOT MEEE! HAPPY MONTHSARY BABI, I LOVE LOVE YOUUUU</div>
+    <button onclick="showFinal()" style="margin-top:20px; background:linear-gradient(135deg,var(--secret-color),#aa0077); border:none; border-radius:14px; padding:14px 36px; font-family:'Bangers',cursive; font-size:1.4rem; color:white; cursor:pointer; box-shadow:0 0 30px var(--secret-color);">
+      Continue... 💕
+    </button>
+  </div>
+</div>
+
+<!-- FINAL MESSAGE -->
+<div id="final-screen" class="screen">
+  <div class="final-content">
+    <div class="final-stats">
+      <div class="final-spent" id="final-spent-display"> 0 kisses</div>
+      <div class="final-equiv" id="final-equiv-text"></div>
+      <div style="font-size:2rem;">💋</div>
+    </div>
+    <div class="final-locked">
+     HAPPY 8TH MONTHSARY ULIT MWAAAH <span class="heart">❤️</span>
+    </div>
+    <div class="final-stars"></div>
+    <button onclick="restartGame()" style="margin-top:24px; background:none; border:2px solid var(--pink); color:var(--pink); border-radius:14px; padding:10px 28px; font-family:'Bangers',cursive; font-size:1.1rem; cursor:pointer;">
+      Play Again 🔄
+    </button>
+  </div>
+</div>
+
+<!-- DIALOGUE OVERLAY -->
+<div class="dialogue-overlay" id="dialogue-overlay" style="display:none;">
+  <div class="dialogue-box">
+    <div class="dialogue-npc-header">
+      <img src="ZIOLES/zioles.webp" class="dialogue-npc-avatar" alt="Zioles"
+           onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 60 60%22><rect width=%2260%22 height=%2260%22 rx=%2230%22 fill=%22%2300FF88%22/><text x=%2230%22 y=%2242%22 text-anchor=%22middle%22 font-size=%2230%22>🧚</text></svg>'">
+      <div>
+        <div class="dialogue-npc-name">Zioles</div>
+        <div style="font-size:0.75rem; color:#888;">Fruit Dealer • Lv. ???</div>
+      </div>
+    </div>
+    <div class="dialogue-text" id="dialogue-text"></div>
+    <div class="dialogue-buttons" id="dialogue-buttons"></div>
+  </div>
+</div>
+
+<!-- SHOP OVERLAY -->
+<div class="shop-overlay" id="shop-overlay">
+  <div class="shop-box">
+    <div class="shop-title">⭐ LUCKY SHOP</div>
+    <div class="shop-desc">naga doble price kada bili mwhehee</div>
+    <div class="shop-item">
+      <div class="shop-item-name">💫 Luck Boost</div>
+      <div class="shop-item-desc">For your NEXT roll only:<br>SECRET fruit chance jumps to <strong style="color:var(--secret-color)">25%</strong>!<br>Common 25% • Rare 15% • Legendary 5% • Mythic 5%</div>
+      <div class="shop-item-price" id="luck-boost-price">💋 1,000 kisses</div>
+      <button class="btn-buy" id="luck-buy-btn" onclick="buyLuck()">Buy Luck Boost</button>
+    </div>
+    <button class="btn-close-shop" onclick="closeShop()">Close</button>
+  </div>
+</div>
+
+<!-- AUDIO -->
+<audio id="bgmusic" loop>
+  <source src="SOUND/bgmusic.mp3" type="audio/mpeg">
+</audio>
+<audio id="sweetmusic">
+  <source src="SOUND/sweet.mp3" type="audio/mpeg">
+</audio>
+<audio id="iloveyoumusic">
+  <source src="SOUND/i love you.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+// ========== GAME STATE ==========
+let totalKisses = 0;
+let luckBoostActive = false;
+let luckBoostUsed = false;
+let luckBoostPurchases = 0;
+let dialogueStep = 0;
+let isRolling = false;
+const PLAYER_LEVEL = 8;
+
+function getLuckBoostCost() {
+  return 1000 * Math.pow(2, luckBoostPurchases);
+}
+
+// ========== FRUIT DATA ==========
+const FRUITS = {
+  common: [
+    { name: 'Blade', img: 'FRUITS/COMMON/blade.jpg' },
+    { name: 'Bomb', img: 'FRUITS/COMMON/bomb.webp' },
+    { name: 'Rocket', img: 'FRUITS/COMMON/rocket.webp' },
+    { name: 'Smoke', img: 'FRUITS/COMMON/smoke.jpg' },
+    { name: 'Spike', img: 'FRUITS/COMMON/spike.webp' },
+    { name: 'Spin', img: 'FRUITS/COMMON/spin.webp' },
+    { name: 'Spring', img: 'FRUITS/COMMON/spring.webp' },
+  ],
+  rare: [
+    { name: 'Ghost', img: 'FRUITS/RARE/ghost.webp' },
+    { name: 'Light', img: 'FRUITS/RARE/light.webp' },
+    { name: 'Magma', img: 'FRUITS/RARE/magma.webp' },
+    { name: 'Rubber', img: 'FRUITS/RARE/rubber.webp' },
+  ],
+  legendary: [
+    { name: 'Buddha', img: 'FRUITS/LEGENDARY/buddha.webp' },
+    { name: 'Creation', img: 'FRUITS/LEGENDARY/creation.webp' },
+    { name: 'Gravity', img: 'FRUITS/LEGENDARY/gravity.webp' },
+    { name: 'Lightning', img: 'FRUITS/LEGENDARY/lighting.webp' },
+    { name: 'Love', img: 'FRUITS/LEGENDARY/love.webp' },
+    { name: 'Pain', img: 'FRUITS/LEGENDARY/pain.png' },
+    { name: 'Portal', img: 'FRUITS/LEGENDARY/portal.webp' },
+    { name: 'Sound', img: 'FRUITS/LEGENDARY/sound.webp' },
+  ],
+  mythic: [
+    { name: 'Control', img: 'FRUITS/MYTHIC/control.webp' },
+    { name: 'Dough', img: 'FRUITS/MYTHIC/dough.webp' },
+    { name: 'Dragon', img: 'FRUITS/MYTHIC/dragon.webp' },
+    { name: 'Gravity', img: 'FRUITS/MYTHIC/gravity.webp' },
+    { name: 'Kitsune', img: 'FRUITS/MYTHIC/kitsune.webp' },
+    { name: 'Shadow', img: 'FRUITS/MYTHIC/shadow.webp' },
+    { name: 'T-Rex', img: 'FRUITS/MYTHIC/trex.jpg' },
+    { name: 'Yeti', img: 'FRUITS/MYTHIC/yeti.jpg' },
+  ],
+  secret: [
+    { name: '???', img: 'FRUITS/SECRET/question.png' },
+  ]
+};
+
+const RARITY_CONFIG = {
+  common:    { chance: 45, color: 'var(--common-color)',    label: 'Common',    msg: 'Better luck next roll!' },
+  rare:      { chance: 30, color: 'var(--rare-color)',      label: 'Rare',      msg: 'Not bad!' },
+  legendary: { chance: 15, color: 'var(--legendary-color)', label: 'Legendary', msg: "Wow! That's lucky!" },
+  mythic:    { chance: 8,  color: 'var(--mythic-color)',    label: 'Mythic',    msg: 'Incredible luck!' },
+  secret:    { chance: 2,  color: 'var(--secret-color)',    label: 'Secret',    msg: '...\nWait...\nThis fruit shouldn\'t exist...' },
+};
+const LUCK_BOOST_CONFIG = {
+  common: 25, rare: 15, legendary: 15, mythic: 20, secret: 25
+};
+
+
+const FRUIT_MESSAGES = {
+  Spike:"pati dito di ka tinatantanan ng spike HAHAH",
+  Smoke:"smoke ka ba? kasi hindi ako makahinga pag andiyan ka",
+  Love:"I LOVE YOU TOO mwehehe",
+  Buddha:"woww, may buddha ka na ulit (wala maisip HAHA)",
+  Kitsune:"nakss may pang pvp na ulit siya ready to away",
+  Dragon:"bigay mo nalang akin, may permanent ka na eh HAHA",
+  Ghost:"GHOSTo na gusto kitaaa",
+  Pain:"mas masakit kapag iniwan mo ko :(",
+  Light:"ikaw ang ilaw sa buhay ko",
+  Blade:"Parang blade ang ngiti mo, kasi diretso tumatagos sa puso ko. (kornii)",
+  Magma:"Mainit pa sa magma ang paMAGMAmahal ko sa'yo.",
+  Spring:"tumatalon talon din ako pag nakikita ka AHHAHA",
+  Portal:"oh may portal kana, tp ka na dito para ikiss ako",
+  'T-Rex':"RAWR! Translation: Ikaw lang ang gusto ko.",
+  Dough:"naalala ko pandesal mo hayst",
+  Bomb:"ibang putok ang gusto ko >.< AHHAHAH",
+  Lightning:"Mas mabilis pa sa kidlat ang pagkahulog ko sayo (3 hrs lang eh HAHAH)",
+  Spin:"sayo lang umiikot ang mundo ko",
+  Gravity:"lakas ng gravity, di ko mapigilan mahulog sayo",
+  Rubber:"GOMAganda ang araw ko kapag ikaw ang kausap ko.",
+  Control:"CONTROLado mo na yata ang puso ko.",
+  Sound:"SOUND check: ikaw pa rin ang laman ng puso ko.",
+  Creation:"Ginawa ako para sayoo eme.",
+  Shadow:"Kahit anino mo lang makita ko, masaya na ako.",
+  Yeti:"Kahit gano pa kalamig, makita ka lang nag iinit na ako ugh HAHAH."
+};
+
+// ========== AUDIO ==========
+const bgMusic = document.getElementById('bgmusic');
+const sweetMusic = document.getElementById('sweetmusic');
+const iloveyouMusic = document.getElementById('iloveyoumusic');
+
+function playBG() {
+  bgMusic.volume = 0.4;
+  bgMusic.play().catch(()=>{});
+}
+function stopBG() { bgMusic.pause(); bgMusic.currentTime = 0; }
+function playSweet() { sweetMusic.volume = 0.7; sweetMusic.play().catch(()=>{}); }
+function playILoveYou() { iloveyouMusic.volume = 0.8; iloveyouMusic.play().catch(()=>{}); }
+
+// ========== SCREENS ==========
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function backToWorld() {
+  showScreen('world-screen');
+  document.getElementById('hud').style.display = 'none';
+}
+
+function restartGame() {
+  totalKisses = 0; 
+  luckBoostActive = false; 
+  luckBoostUsed = false; 
+  luckBoostPurchases = 0;
+  updateKissDisplay();
+  stopBG(); iloveyouMusic.pause(); sweetMusic.pause();
+  showScreen('world-screen');
+  document.getElementById('hud').style.display = 'none';
+  document.getElementById('result-box').innerHTML = '<div style="color:#555;font-style:italic;">Tap ROLL to spin the gacha!</div>';
+}
+
+// ========== DIALOGUE ==========
+function startDialogue() {
+  playBG();
+  dialogueStep = 0;
+  showDialogue(
+    `Hello, I'm <span class="highlight">Zioles</span>. I sell random physical fruit to people once every click.<br><br>Keep in mind, the <span class="kiss-text">higher your love is</span>, the more it'll cost you!`,
+    [
+      { text: 'Alright!', action: nextDialogue },
+      { text: 'Nevermind', action: closeDialogue }
+    ]
+  );
+}
+
+function nextDialogue() {
+  showDialogue(
+    `Since you are <span class="highlight">level ${PLAYER_LEVEL}</span>, the next fruit you purchase will cost <span class="kiss-text">${PLAYER_LEVEL} kiss${PLAYER_LEVEL !== 1 ? 'es' : ''}!</span>`,
+    [
+      { text: 'Alright!', action: () => { closeDialogue(); openGacha(); } },
+      { text: 'Nevermind', action: closeDialogue }
+    ]
+  );
+}
+
+function showDialogue(text, buttons) {
+  document.getElementById('dialogue-text').innerHTML = text;
+  const btnContainer = document.getElementById('dialogue-buttons');
+  btnContainer.innerHTML = '';
+  buttons.forEach(b => {
+    const el = b.text === 'Nevermind'
+      ? document.createElement('button')
+      : document.createElement('button');
+    el.className = b.text === 'Nevermind' ? 'btn-nevermind' : 'btn-alright';
+    el.textContent = b.text;
+    el.onclick = b.action;
+    btnContainer.appendChild(el);
+  });
+  document.getElementById('dialogue-overlay').style.display = 'flex';
+}
+
+function closeDialogue() {
+  document.getElementById('dialogue-overlay').style.display = 'none';
+}
+
+// ========== GACHA ==========
+function openGacha() {
+  showScreen('gacha-screen');
+  document.getElementById('hud').style.display = 'flex';
+  document.getElementById('roll-cost').textContent = PLAYER_LEVEL;
+  buildFruitStrip();
+  updateKissDisplay();
+}
+
+function updateKissDisplay() {
+  document.getElementById('kiss-display').textContent = totalKisses.toLocaleString();
+
+  const luckBtn = document.getElementById('luck-buy-btn');
+  if (luckBtn) {
+    luckBtn.disabled = luckBoostUsed;
+  }
+
+  // Update shop price dynamically
+  const priceEl = document.getElementById('luck-boost-price');
+  if (priceEl) {
+    const cost = getLuckBoostCost();
+    priceEl.textContent = `💋 ${cost.toLocaleString()} kisses`;
+  }
+
+  document.getElementById('luck-indicator')
+    .classList.toggle('show', luckBoostActive);
+}
+
+// Build the visual strip with all fruits
+let allFruitPool = [];
+function buildFruitPool() {
+  allFruitPool = [];
+  ['common','rare','legendary','mythic','secret'].forEach(r => {
+    FRUITS[r].forEach(f => allFruitPool.push({ ...f, rarity: r }));
+  });
+}
+buildFruitPool();
+
+function buildFruitStrip() {
+  const strip = document.getElementById('fruit-strip');
+  strip.innerHTML = '';
+  // Build a long repeated shuffle for scrolling
+  const pool = [...allFruitPool];
+  const extended = [];
+  for (let i = 0; i < 60; i++) {
+    extended.push(pool[Math.floor(Math.random() * pool.length)]);
+  }
+  extended.forEach((f, i) => {
+    const card = document.createElement('div');
+    card.className = 'fruit-card';
+    card.id = `fruit-card-${i}`;
+    card.innerHTML = `
+      <img class="fruit-card-img" src="${f.img}" alt="${f.name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 70 70%22><circle cx=%2235%22 cy=%2235%22 r=%2235%22 fill=%22%23333%22/><text x=%2235%22 y=%2248%22 text-anchor=%22middle%22 font-size=%2232%22>🍎</text></svg>'">
+      <div class="fruit-card-name">${f.name}</div>
+      <div class="fruit-card-rarity rarity-${f.rarity}">${RARITY_CONFIG[f.rarity].label}</div>
+    `;
+    strip.appendChild(card);
+  });
+  return extended;
+}
+
+function pickRarity() {
+  const weights = luckBoostActive ? LUCK_BOOST_CONFIG : Object.fromEntries(
+    Object.entries(RARITY_CONFIG).map(([k,v]) => [k, v.chance])
+  );
+  const total = Object.values(weights).reduce((a,b) => a+b, 0);
+  let r = Math.random() * total;
+  for (const [rarity, w] of Object.entries(weights)) {
+    r -= w;
+    if (r <= 0) return rarity;
+  }
+  return 'common';
+}
+
+function doRoll() {
+  if (isRolling) return;
+  const cost = PLAYER_LEVEL;
+  totalKisses += cost;
+  updateKissDisplay();
+  isRolling = true;
+
+  const rollBtn = document.getElementById('roll-btn');
+  rollBtn.disabled = true;
+
+  const rarity = pickRarity();
+  const fruitList = FRUITS[rarity];
+  const fruit = fruitList[Math.floor(Math.random() * fruitList.length)];
+
+  if (luckBoostActive) {
+    luckBoostActive = false;
+    updateKissDisplay();
+  }
+
+  // Rebuild strip with the winning fruit at the target position
+  const strip = document.getElementById('fruit-strip');
+  strip.style.transition = 'none';
+  strip.style.transform = 'translateX(0)';
+
+  const extFruits = buildFruitStrip();
+  const CARD_WIDTH = 128; // 120 + 8 margin
+  const STRIP_WIDTH = strip.parentElement.offsetWidth;
+  const CENTER_OFFSET = STRIP_WIDTH / 2 - CARD_WIDTH / 2;
+
+  // Place winning fruit at index ~45
+  const WIN_INDEX = 44 + Math.floor(Math.random() * 4);
+  const winCard = strip.children[WIN_INDEX];
+  winCard.innerHTML = `
+    <img class="fruit-card-img" src="${fruit.img}" alt="${fruit.name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 70 70%22><circle cx=%2235%22 cy=%2235%22 r=%2235%22 fill=%22%23333%22/><text x=%2235%22 y=%2248%22 text-anchor=%22middle%22 font-size=%2232%22>🍎</text></svg>'">
+    <div class="fruit-card-name">${fruit.name}</div>
+    <div class="fruit-card-rarity rarity-${rarity}">${RARITY_CONFIG[rarity].label}</div>
+  `;
+
+  const targetX = -(WIN_INDEX * CARD_WIDTH - CENTER_OFFSET);
+
+  // Animate
+  requestAnimationFrame(() => {
+    strip.style.transition = 'transform 3.5s cubic-bezier(0.17, 0.67, 0.12, 1.0)';
+    strip.style.transform = `translateX(${targetX}px)`;
+  });
+
+  setTimeout(() => {
+    winCard.classList.add('selected');
+    showResult(rarity, fruit);
+    isRolling = false;
+    rollBtn.disabled = false;
+
+    if (rarity === 'secret') {
+      setTimeout(() => {
+        stopBG();
+        playSweet();
+        launchHearts();
+        showScreen('secret-screen');
+        document.getElementById('hud').style.display = 'none';
+      }, 2500);
+    }
+  }, 3600);
+}
+
+function showResult(rarity, fruit) {
+  const cfg = RARITY_CONFIG[rarity];
+  const rb = document.getElementById('result-box');
+  rb.style.borderColor = cfg.color;
+  rb.style.boxShadow = `0 0 20px ${cfg.color}44`;
+
+  if (rarity === 'secret') {
+    rb.innerHTML = `
+      <div class="result-fruit-name" style="color:${cfg.color}">${fruit.name}</div>
+      <div class="result-secret-msg">${cfg.msg.replace(/\n/g,'<br>')}</div>
+    `;
+  } else {
+    rb.innerHTML = `
+      <div class="result-fruit-name" style="color:${cfg.color}">${fruit.name}</div>
+      <div class="result-msg" style="color:${cfg.color}aa">${cfg.label} — ${(FRUIT_MESSAGES[fruit.name] || cfg.msg)}</div>
+    `;
+  }
+}
+
+// ========== SHOP ==========
+function openShop() {
+  document.getElementById('luck-buy-btn').disabled = luckBoostUsed;
+  document.getElementById('shop-overlay').classList.add('open');
+}
+function closeShop() {
+  document.getElementById('shop-overlay').classList.remove('open');
+}
+function buyLuck() {
+  if (luckBoostUsed) return;
+  const cost = getLuckBoostCost();
+  totalKisses += cost;
+  luckBoostActive = true;
+  luckBoostUsed = false;
+  luckBoostPurchases++;
+  updateKissDisplay();
+  closeShop();
+}
+
+// ========== FINAL SCREEN ==========
+function showFinal() {
+  sweetMusic.pause();
+  playILoveYou();
+  launchHearts();
+
+  const total = totalKisses;
+  const days = Math.ceil(total / 10);
+  const years = (days / 365).toFixed(1);
+  const roundYears = Math.floor(days / 365);
+  const months = Math.floor((days % 365) / 30);
+
+  document.getElementById('final-spent-display').textContent = `MAY UTANG KA NA SAKIN NA ${total.toLocaleString()} kisses`;
+  document.getElementById('final-equiv-text').innerHTML = `
+    That's <span>10 kisses every day</span><br>
+    for <span>${roundYears} year${roundYears !== 1 ? 's' : ''}</span>${months > 0 ? ` and <span>${months} month${months !== 1 ? 's' : ''}</span>` : ''}.<br>
+    (${days.toLocaleString()} total days to be exact)
+  `;
+
+  showScreen('final-screen');
+}
+
+// ========== PARTICLES (hearts) ==========
+const canvas = document.getElementById('particle-canvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+let animFrameId = null;
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+
+function launchHearts() {
+  for (let i = 0; i < 60; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: canvas.height + 20,
+      vx: (Math.random() - 0.5) * 3,
+      vy: -(Math.random() * 4 + 2),
+      size: Math.random() * 20 + 10,
+      alpha: 1,
+      emoji: ['❤️','💕','💗','💖','💘','🌸'][Math.floor(Math.random()*6)],
+      decay: Math.random() * 0.008 + 0.004
+    });
+  }
+  if (!animFrameId) animateParticles();
+}
+
+function animateParticles() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particles = particles.filter(p => p.alpha > 0);
+  particles.forEach(p => {
+    ctx.save();
+    ctx.globalAlpha = p.alpha;
+    ctx.font = `${p.size}px serif`;
+    ctx.fillText(p.emoji, p.x, p.y);
+    ctx.restore();
+    p.x += p.vx;
+    p.y += p.vy;
+    p.alpha -= p.decay;
+  });
+  if (particles.length > 0) {
+    animFrameId = requestAnimationFrame(animateParticles);
+  } else {
+    animFrameId = null;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+}
+
+// Start bg music on first interaction
+document.addEventListener('click', () => {
+  if (bgMusic.paused && document.getElementById('world-screen').classList.contains('active')) {
+    playBG();
+  }
+}, { once: false });
+</script>
+</body>
+</html>
